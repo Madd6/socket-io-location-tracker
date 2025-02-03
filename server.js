@@ -1,16 +1,25 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const cors = require('cors');
 
 const app = express();
+
+app.use(cors({
+  origin: "*", // Daftar origin yang diizinkan
+  methods: ['GET', 'POST'], // Metode yang diizinkan
+  credentials: true // Jika menggunakan cookie
+}));
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: '*', // Ganti dengan domain proyek Anda jika ingin lebih aman
     methods: ['GET', 'POST']
   }
 });
 
+// Endpoint untuk pengecekan
 app.get('/', (req, res) => {
   res.json({ message: 'Socket.IO API is running!' });
 });
@@ -24,7 +33,11 @@ io.on('connection', (socket) => {
     console.log('Data received:', location);
 
     // Kirim balasan ke client
-    socket.broadcast.emit('receive-location', {location:location,id:socket.id} );
+    socket.broadcast.emit('receive-location', { location: location, id: socket.id });
+  });
+  
+  socket.on('stopTracking', (location) => {
+    socket.broadcast.emit('remove-marker', { id: socket.id });
   });
 
   // Ketika client terputus
@@ -35,7 +48,7 @@ io.on('connection', (socket) => {
 });
 
 // Menjalankan server
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Socket.IO API is running on port ${PORT}`);
+  console.log(`Socket.IO API is running on port ${PORT}`);
 });
